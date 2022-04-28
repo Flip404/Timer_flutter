@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:timer/ticker.dart';
 import 'package:timer/timer/bloc/timer_bloc.dart';
+import 'package:timer/utils.dart';
 
 class TimerPage extends StatelessWidget {
   const TimerPage({Key? key}) : super(key: key);
@@ -45,17 +46,16 @@ class TimerText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final duration = context.select((TimerBloc bloc) => bloc.state.duration);
-    final hourStr =
-        ((duration / 60) / 60).floor().toString().padLeft(2, '0');
+    final hourStr = ((duration / 60) / 60).floor().toString().padLeft(2, '0');
     final minutesStr =
         ((duration / 60) % 60).floor().toString().padLeft(2, '0');
     final secondsStr = (duration % 60).floor().toString().padLeft(2, '0');
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        TimeButton(time: hourStr, timeState: "H"),
-        TimeButton(time: minutesStr, timeState: "M"),
-        TimeButton(time: secondsStr, timeState: "S"),
+        TimeButton(time: hourStr, timeState: "Hours"),
+        TimeButton(time: minutesStr, timeState: "Minutes"),
+        TimeButton(time: secondsStr, timeState: "Seconds"),
       ],
     );
   }
@@ -65,10 +65,14 @@ class TimeButton extends StatelessWidget {
   final String timeState;
   final String time;
 
-  const TimeButton({Key? key, required this.time, required this.timeState}) : super(key: key);
+  const TimeButton({Key? key, required this.time, required this.timeState})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+
+    const String error = 'The time is not enough to decrease.';
+
     return BlocBuilder<TimerBloc, TimerState>(
       buildWhen: (prev, state) => prev.runtimeType != state.runtimeType,
       builder: (context, state) {
@@ -79,42 +83,100 @@ class TimeButton extends StatelessWidget {
                 state is TimerDecreasedComplete ||
                 state is TimerRunComplete) ...[
               IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                onPressed: () {
-                  if( timeState == "H"){
-                    context.read<TimerBloc>().add(TimerIncreasedHours());
-                  }
-                  if( timeState == "M"){
-                    context.read<TimerBloc>().add(TimerIncreasedMinutes());
-                  }
-                  if( timeState == "S"){
-                    context.read<TimerBloc>().add(TimerIncreasedSecond());
-                  }
-                }
+                  icon: const Icon(Icons.expand_less),
+                  onPressed: () {
+                    if (timeState == "Hours") {
+                      context.read<TimerBloc>().add(TimerIncreasedHours());
+                    }
+                    if (timeState == "Minutes") {
+                      context.read<TimerBloc>().add(TimerIncreasedMinutes());
+                    }
+                    if (timeState == "Seconds") {
+                      context.read<TimerBloc>().add(TimerIncreasedSecond());
+                    }
+                  }),
+              const SizedBox(
+                height: 5,
               ),
-              Text(
-                time,
-                style: Theme.of(context).textTheme.headline2,
+              Container(
+                width: 90,
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  time,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    fontSize: 50,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                height: 5,
               ),
               IconButton(
-                icon: const Icon(Icons.remove_circle_outline),
-                onPressed: () {
-                  if( timeState == "H"){
-                    context.read<TimerBloc>().add(TimerDecreasedHours());
-                  }
-                  if( timeState == "M"){
-                    context.read<TimerBloc>().add(TimerDecreasedMinutes());
-                  }
-                  if( timeState == "S"){
-                    context.read<TimerBloc>().add(TimerDecreasedSecond());
-                  }
-                }
+                  icon: const Icon(Icons.expand_more),
+                  onPressed: () {
+                    if (timeState == "Hours") {
+                      if (state.duration >= 3600){
+                        context.read<TimerBloc>().add(TimerDecreasedHours());
+                      } else{
+                        Utils.showSnackBar(error);
+                      }
+                    }
+                    if (timeState == "Minutes") {
+                      if (state.duration >= 60){
+                        context.read<TimerBloc>().add(TimerDecreasedMinutes());
+                      } else{
+                        Utils.showSnackBar(error);
+                      }
+                    }
+                    if (timeState == "Seconds") {
+                      if (state.duration >= 1){
+                        context.read<TimerBloc>().add(TimerDecreasedSecond());
+                      } else{
+                        Utils.showSnackBar(error);
+                      }
+                    }
+                  }),
+              const SizedBox(
+                height: 15,
+              ),
+              Text(
+                timeState,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
               ),
             ],
             if (state is TimerRunInProgress || state is TimerRunPause) ...[
+              Container(
+                width: 90,
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  time,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    fontSize: 50,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                height: 15,
+              ),
               Text(
-                time,
-                style: Theme.of(context).textTheme.headline2,
+                timeState,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                ),
               ),
             ]
           ],
@@ -134,7 +196,8 @@ class Actions extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            if (state is TimerInitial || state is TimerIncreasedComplete ||
+            if (state is TimerInitial ||
+                state is TimerIncreasedComplete ||
                 state is TimerDecreasedComplete) ...[
               FloatingActionButton(
                 child: const Icon(Icons.play_arrow),
@@ -191,8 +254,8 @@ class Background extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.blue.shade50,
             Colors.blue.shade500,
+            Colors.blue.shade50,
           ],
         ),
       ),
