@@ -72,6 +72,7 @@ class TimeButton extends StatelessWidget {
   Widget build(BuildContext context) {
 
     const String error = 'The time is not enough to decrease.';
+    final duration = context.select((TimerBloc bloc) => bloc.state.duration);
 
     return BlocBuilder<TimerBloc, TimerState>(
       buildWhen: (prev, state) => prev.runtimeType != state.runtimeType,
@@ -120,21 +121,21 @@ class TimeButton extends StatelessWidget {
                   icon: const Icon(Icons.expand_more),
                   onPressed: () {
                     if (timeState == "Hours") {
-                      if (state.duration >= 3600){
+                      if (duration >= 3600){
                         context.read<TimerBloc>().add(TimerDecreasedHours());
                       } else{
                         Utils.showSnackBar(error);
                       }
                     }
                     if (timeState == "Minutes") {
-                      if (state.duration >= 60){
+                      if (duration >= 60){
                         context.read<TimerBloc>().add(TimerDecreasedMinutes());
                       } else{
                         Utils.showSnackBar(error);
                       }
                     }
                     if (timeState == "Seconds") {
-                      if (state.duration >= 1){
+                      if (duration >= 1){
                         context.read<TimerBloc>().add(TimerDecreasedSecond());
                       } else{
                         Utils.showSnackBar(error);
